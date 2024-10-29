@@ -109,6 +109,7 @@ class CellSegmentationInference:
         """
         self.model_path = Path(model_path)
         self.device = f"cuda:{gpu}"
+        # self.device = "cpu" if gpu == -1 else f"cuda:{gpu}" #Comment to run on GPU
         self.__instantiate_logger()
         self.__load_model()
         self.__load_inference_transforms()
@@ -247,7 +248,7 @@ class CellSegmentationInference:
         subdir_name: str = None,
         patch_size: int = 1024,
         overlap: int = 64,
-        batch_size: int = 8,
+        batch_size: int = 4,
         geojson: bool = False,
     ) -> None:
         """Process WSI file
@@ -308,7 +309,8 @@ class CellSegmentationInference:
             pbar = tqdm.tqdm(wsi_inference_dataloader, total=len(wsi_inference_dataset))
 
             for batch in wsi_inference_dataloader:
-                patches = batch[0].to(self.device)
+                patches = batch[0].to(self.device) #Uncomment to run on GPU
+                # patches = batch[0].to(self.device, non_blocking=True) #Comment to run on GPU
 
                 metadata = batch[1]
                 if self.mixed_precision:
@@ -340,6 +342,9 @@ class CellSegmentationInference:
                     # patch_size = patch_metadata["wsi_metadata"]["patch_size"]
                     wsi_scaling_factor = wsi.metadata["downsampling"]
                     patch_size = wsi.metadata["patch_size"]
+
+                    """Below are the global coordinates which represent the top-left corner of the 
+                        patch in the context of the entire whole slide image."""
                     x_global = int(
                         patch_metadata["row"] * patch_size * wsi_scaling_factor
                         - (patch_metadata["row"] + 0.5) * overlap
@@ -353,6 +358,8 @@ class CellSegmentationInference:
                     for cell in patch_instance_types.values():
                         if cell["type"] == nuclei_types["Background"]:
                             continue
+                            
+                        #the offset_global (which contains the global coordinates of the patch's top-left corner) is added to the local coordinates of each cell's centroid, contour, and bounding box to convert them to global WSI coordinates.
                         offset_global = np.array([x_global, y_global])
                         centroid_global = cell["centroid"] + np.flip(offset_global)
                         contour_global = cell["contour"] + np.flip(offset_global)
@@ -497,9 +504,12 @@ class CellSegmentationInference:
                     Contains bbox, contour, 2D-position, type and type_prob for each cell
                 * List[dict]: Network tokens on cpu device with shape (batch_size, num_tokens_h, num_tokens_w, embd_dim)
         """
+        #Applies softmax to the binary nuclei segmentation map and converts logits to probabilities for each pixel being nuclei or background.
         predictions["nuclei_binary_map"] = F.softmax(
             predictions["nuclei_binary_map"], dim=1
         )  # shape: (batch_size, 2, H, W)
+
+        #Applies softmax to the nuclei type segmentation map and converts logits to probabilities for each nuclei class.
         predictions["nuclei_type_map"] = F.softmax(
             predictions["nuclei_type_map"], dim=1
         )  # shape: (batch_size, num_nuclei_classes, H, W)
@@ -508,8 +518,8 @@ class CellSegmentationInference:
             _,
             instance_types,
         ) = self.model.calculate_instance_map(predictions, magnification=magnification)
-
-        tokens = predictions["tokens"].to("cpu")
+        #The result instance_types is a list of dictionaries, each representing a detected cell with its properties.
+        tokens = predictions["tokens"].to("cpu") #These tokens likely represent learned features or embeddings for each patch.
 
         return instance_types, tokens
 
