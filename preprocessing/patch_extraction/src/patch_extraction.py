@@ -655,6 +655,7 @@ class PreProcessor(object):
             limit_bounds=True,
         )
 
+        """Original code section from CellViT"""
         if self.config.downsample is not None:
             # Each level is downsampled by a factor of 2
             # downsample expresses the desired downsampling, we need to count how many times the
@@ -665,11 +666,37 @@ class PreProcessor(object):
             level = tiles.level_count - self.config.downsample.bit_length()
         else:
             self.config.downsample = 2 ** (tiles.level_count - level - 1)
+        
+        print(f"Calculated level from DeepZoom: {level}") #added for debugging from my end
+        print(f"Number of levels in tiles: {tiles.level_count}") #added for debug from my end
+
         if level >= tiles.level_count:
             raise WrongParameterException(
                 "Requested level does not exist. Number of slide levels:",
                 tiles.level_count,
             )
+
+        """ Modified to use a level that actually exists in the WSI, rather than one created by the deepzoomgenerator in the original code. 
+        The deepzoomgenerator is creating additional levels beyond what exists in the current WSI of . 
+        To address this, we need to modify the code to use the correct number of levels.
+        Code runs but the patches are not getting generated. Ideally the issue is with the the levels defined in WSI. So need to use the DeepZoom."""
+        # if self.config.downsample is not None:
+        #     # Calculate level based on downsample, but limit it to the actual number of levels in the slide
+        #     level = min(tiles.level_count - self.config.downsample.bit_length(), slide.level_count - 1)
+        # else:
+        #     # If downsample is not specified, use the highest level available in the actual slide
+        #     level = slide.level_count - 1
+
+        # self.config.downsample = 2 ** (slide.level_count - level - 1)
+
+        # print(f"Using level: {level}")
+        # print(f"Actual downsample: {self.config.downsample}")
+
+        # if level >= slide.level_count:
+        #     raise WrongParameterException(
+        #         "Requested level does not exist. Number of slide levels:",
+        #         slide.level_count,
+        #     )
 
         # store level!
         self.curr_wsi_level = level

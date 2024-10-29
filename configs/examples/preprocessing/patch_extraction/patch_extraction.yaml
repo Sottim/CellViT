@@ -1,3 +1,4 @@
+
 # dataset paths
 wsi_paths:                    # Path to the folder where all WSI are stored or path to a single WSI-file [str]
 wsi_filelist:                 # Path to a csv-filelist with WSI files (separator: `,`), if provided just these files are

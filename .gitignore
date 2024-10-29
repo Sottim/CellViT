@@ -52,3 +52,4 @@ results/
 # other
 .DS_Store
 Orig-Metrics
+logs_paper/*
