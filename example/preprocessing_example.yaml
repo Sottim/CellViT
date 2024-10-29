@@ -1,16 +1,31 @@
 # dataset paths
-wsi_paths: ./example/TCGA-V5-A7RE-11A-01-TS1.57401526-EF9E-49AC-8FF6-B4F9652311CE.svs
-output_path: ./example/output/preprocessing
+# wsi_paths: ./example/TCGA-V5-A7RE-11A-01-TS1.57401526-EF9E-49AC-8FF6-B4F9652311CE.svs #Default Image Path from CellVit
+# output_path: ./example/output/preprocessing
+wsi_paths: ./example/    #passing multiple wsi files at once as input for preprocessing
+output_path: ./example/output/preprocessing-tnbc-slides
 
 # basic setups
 patch_size: 1024
 patch_overlap: 6.25
 target_mag: 40
-processes: 8
+processes: 24
 overwrite: True
+# wsi_extension: svs
+wsi_extension: tif
 
 # macenko stain normalization
 normalize_stains: True
 
 # finding patches
 min_intersection_ratio: 0.05
+
+#added fro the 163S.tif file
+# wsi_properties:
+#   slide_mpp: 0.4566
+#   magnification: 20
+
+#added fro the 163S.tif file
+wsi_properties:
+  slide_mpp: 0.25
+  magnification: 40
+
